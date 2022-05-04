@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -13,10 +14,8 @@ namespace Assets.Scripts
         private NavMeshAgent agent;
         private ThirdPersonCharacter character;
 
-        [SerializeField] private List<GameObject> collectables;
-
-        private Transform target;
-        private int targetIndex = 0;
+        [HideInInspector]
+        public Transform target;
 
         // Use this for initialization
         void Start()
@@ -26,7 +25,6 @@ namespace Assets.Scripts
 
             agent.updateRotation = false;
 
-            SetTarget();
         }
 
         // Update is called once per frame
@@ -46,24 +44,28 @@ namespace Assets.Scripts
          
         }
 
-        void SetTarget()
+        public void SetTarget(Transform transform)
         {
-            if (collectables.Count > 0)
-            {
-                targetIndex = Random.Range(0, collectables.Count);
-                target = collectables[targetIndex].transform;
-                return;
-            }
-            target = null;
+           target = transform;
         }
 
         private void OnCollisionEnter(Collision collision)
         {
             if (collision.gameObject.CompareTag("Collectable"))
             {
-                collectables.RemoveAt(targetIndex);   
-                Destroy(collision.gameObject);
-                SetTarget();
+               Collectable collectable = collision.gameObject.GetComponent<Collectable>();
+                if (collectable != null)
+                {
+                    GameManager gameManager = GameObject.Find("GameManager").GetComponent<GameManager>();
+                    if (CompareTag("Cowboy"))
+                    {
+                        gameManager.UpdateCowboyScore(collectable.points);
+                    } else if (CompareTag("Lady"))
+                    {
+                        gameManager.UpdateLadyScore(collectable.points);
+                    }
+                    gameManager.DeleteCollectable(collision.gameObject.GetInstanceID());
+                }
             }
         }
     }

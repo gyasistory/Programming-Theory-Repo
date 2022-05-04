@@ -1,56 +1,96 @@
+using Assets.Scripts;
 using Cinemachine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GameManager : MonoBehaviour
+namespace Assets.Scripts
 {
-    public CinemachineVirtualCameraBase overviewCamera;
-    public CinemachineVirtualCameraBase cowboyCamera;
-    public CinemachineVirtualCameraBase ladyCamera;
-
-    // Start is called before the first frame update
-    void Start()
+    public class GameManager : MonoBehaviour
     {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 
-    public void EnableCowboyCamera()
-    {
-        // Activate CowboyCamera
-        cowboyCamera.Priority = 100;
+        [SerializeField] List<Transform> collectableSpawnPoints;
 
-        // Deactivate other cameras
-        overviewCamera.Priority = -100;
-        ladyCamera.Priority = -100;
-       
-    }
+        [SerializeField] List<GameObject> collectablePrefabs = new List<GameObject>();
 
-    public void EnableOverviewCamera()
-    {
-        // Activate CowboyCamera
-        overviewCamera.Priority = 100;
+        [SerializeField] PlayerController CowboyPlayer;
+        [SerializeField] PlayerController LadyPlayer;
 
-        // Deactivate other cameras
-        cowboyCamera.Priority = -100;
-        ladyCamera.Priority = -100;
+        private List<GameObject> activeCollectables = new List<GameObject>();
 
-    }
+        private bool isGameActive = false;
+        private bool isGameOver = false;
 
-    public void EnableLadyCamera()
-    {
-        // Activate CowboyCamera
-        ladyCamera.Priority = 100;
+        private float startGameTimer = 3;
 
-        // Deactivate other cameras
-        overviewCamera.Priority = -100;
-        cowboyCamera.Priority = -100;
+        // Start is called before the first frame update
+        void Start()
+        {
+            LoadCollectables();
+        }
 
+        // Update is called once per frame
+        void Update()
+        {
+            if (!isGameActive && !isGameOver)
+            {
+                startGameTimer -= Time.deltaTime;
+
+                if (startGameTimer <= 0)
+                {
+                    isGameActive = true;
+                }
+            }
+            if (isGameActive && activeCollectables.Count > 0)
+            {
+                if (CowboyPlayer.target == null)
+                {
+                    int randomCollectable = Random.Range(0, activeCollectables.Count);
+                    CowboyPlayer.SetTarget(activeCollectables[randomCollectable].transform);
+                }
+                if (LadyPlayer.target == null)
+                {
+                    int randomCollectable = Random.Range(0, activeCollectables.Count);
+                    LadyPlayer.SetTarget(activeCollectables[randomCollectable].transform);
+                }
+            }
+        }
+
+        void LoadCollectables()
+        {
+            int count = DataManager.Instance.NumberOfCollectables;
+            for (int i = 0; i < count; i++)
+            {
+                int randomCollectable = Random.Range(0, collectablePrefabs.Count);
+                int randomSpawnPoint = Random.Range(0, collectableSpawnPoints.Count);
+
+                GameObject collectable = collectablePrefabs[randomCollectable];
+                Transform spawnPoint = collectableSpawnPoints[randomSpawnPoint];
+
+                collectable.transform.position = spawnPoint.position;
+                activeCollectables.Add(Instantiate(collectable));
+
+                // Remove Spawn point to prevent duplicate spawn positions
+                collectableSpawnPoints.RemoveAt(randomSpawnPoint);
+            }
+        }
+
+        internal void UpdateLadyScore(int points)
+        {
+            DataManager.Instance.LadyScore += points;
+        }
+
+        internal void DeleteCollectable(int collectableID)
+        {
+            GameObject collect = activeCollectables.Find(x => x.GetInstanceID() == collectableID);
+            activeCollectables.Remove(collect);
+            Destroy(collect);
+        }
+
+        internal void UpdateCowboyScore(int points)
+        {
+            DataManager.Instance.CowboyScore += points;
+        }
     }
 }

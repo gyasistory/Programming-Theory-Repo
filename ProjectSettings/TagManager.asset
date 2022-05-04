@@ -5,6 +5,8 @@ TagManager:
   serializedVersion: 2
   tags:
   - Collectable
+  - Cowboy
+  - Lady
   layers:
   - Default
   - TransparentFX
